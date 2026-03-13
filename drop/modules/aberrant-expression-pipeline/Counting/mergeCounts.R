@@ -50,7 +50,7 @@ row_names_objects <- lapply(counts_list, rownames)
 if( length(unique(row_names_objects)) > 1 ){
   stop('The rows (genes) of the sample counts to be merged are not the same.')
 }
-if(!identical(rownames(count_ranges), rownames(counts_list[[1]]))){
+if(!identical(names(count_ranges), rownames(counts_list[[1]]))){
     stop('The rows (genes) of the count matrices to be merged are not the same as the annotation.')
 }
 
