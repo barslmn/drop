@@ -5,10 +5,9 @@ import numpy as np
 from drop import utils
 from .Submodules import Submodule
 
-
 class AE(Submodule):
 
-    def __init__(self, config, sampleAnnotation, processedDataDir, processedResultsDir, workDir):
+    def __init__(self, config, sampleAnnotation: "SampleAnnotation", processedDataDir, processedResultsDir, workDir):
         super().__init__(config, sampleAnnotation, processedDataDir, processedResultsDir, workDir)
         self.CONFIG_KEYS = [
             "groups", "fpkmCutoff", "implementation", "padjCutoff", "zScoreCutoff",
@@ -76,11 +75,29 @@ class AE(Submodule):
             
         return count_files
 
-    def getCountParams(self, rnaID):
+    def getCountParams(self, rnaID) -> dict[str, str | bool]:
         sa_row = self.sampleAnnotation.getRow("RNA_ID", rnaID)
-        count_params = sa_row[["STRAND", "COUNT_MODE", "PAIRED_END", "COUNT_OVERLAPS"]]
-        count_params_dict = {
-            k: bool(v) if isinstance(v, np.bool_) else v
-            for k, v in count_params.iloc[0].to_dict().items()
+        return {
+            "STRAND": sa_row.iloc[0].STRAND,
+            "COUNT_MODE": sa_row.iloc[0].COUNT_MODE,
+            "PAIRED_END": self._convert_to_bool(sa_row.iloc[0].PAIRED_END),
+            "COUNT_OVERLAPS": self._convert_to_bool(sa_row.iloc[0].COUNT_OVERLAPS),
         }
-        return count_params_dict
+
+    @staticmethod
+    def _convert_to_bool(v: object) -> bool:
+        """Convert value to bool if possible, otherwise return the original object."""
+        if isinstance(v, (bool, np.bool_)):
+            return bool(v)
+        if isinstance(v, (int, float)):
+            if v == 1:
+                return True
+            if v == 0:
+                return False
+        if isinstance(v, str) and v.lower() in ('true', 'false', 'yes', 'no', 't', 'f', 'y', 'n', '1', '0'):
+            return v.lower() in ('true', 'yes', 't', 'y', '1')
+        raise ValueError(f"Cannot convert value '{v}' of type {type(v)} to bool." +
+                         " Please provide a boolean value (True/False), 1/0 or yes/no.")
+
+# import in the end to overcome circular import issues
+from drop.config.SampleAnnotation import SampleAnnotation
